@@ -57,7 +57,22 @@ a{color:inherit;}
 .comment-add-form select{flex:0 0 auto;width:auto;}
 .comment-add-form textarea{min-height:50px;}
 
-.home-hero{text-align:center;padding:34px 20px 14px;}
+.pairing-card{background:#fffaf0;border:1px solid rgba(176,144,79,.4);border-radius:10px;padding:16px 8px 12px;text-align:center;cursor:pointer;box-shadow:0 2px 5px rgba(80,60,20,.08);}
+.pairing-avatars{display:flex;justify-content:center;align-items:center;gap:-8px;}
+.pairing-avatar{width:46px;height:46px;border-radius:50%;object-fit:cover;border:2px solid var(--color-gold-light);margin:0 -6px;background:#fff;}
+.pairing-avatar.empty{display:flex;align-items:center;justify-content:center;background:#f1e6cb;color:var(--color-text-soft);font-size:12px;}
+.pairing-title{font-family:'Shippori Mincho',serif;font-size:13.5px;margin-top:8px;color:var(--color-navy);}
+.pairing-names{font-size:10.5px;color:var(--color-text-soft);margin-top:2px;font-family:'Cormorant Garamond',serif;font-style:italic;}
+.pairing-hero-avatars{display:flex;justify-content:center;align-items:center;gap:14px;margin-top:8px;}
+.pairing-avatar-lg{width:72px;height:72px;border-radius:50%;object-fit:cover;border:3px solid var(--color-gold);}
+.pairing-avatar-lg.empty{display:flex;align-items:center;justify-content:center;background:#f1e6cb;color:var(--color-text-soft);font-size:12px;}
+.pairing-connector{font-size:18px;color:var(--color-rose);}
+.pairing-tagline{font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--color-text-soft);font-size:13.5px;margin:12px 0 4px;}
+.pairing-chip-row{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:10px 0;}
+.cat-filter-row{display:flex;flex-wrap:wrap;gap:6px;padding:0 16px 8px;}
+
+.home-hero{text-align:center;padding:34px 20px 14px;position:relative;}
+.doodle-accent{position:absolute;top:6px;right:10px;opacity:.6;pointer-events:none;}
 .hero-flourish{display:flex;justify-content:center;margin-bottom:6px;opacity:.85;}
 .home-hero h1{font-family:'Shippori Mincho',serif;font-size:25px;letter-spacing:.14em;color:var(--color-navy);margin:4px 0 4px;}
 .home-hero p{font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--color-text-soft);font-size:12.5px;letter-spacing:.1em;margin:0;}
@@ -169,9 +184,10 @@ const FOLDER_META = {
   auNotes:{icon:'🗝',label:'設定ノート(AU)',desc:'特殊設定・if世界メモ'},
   ideas:{icon:'🪶',label:'ネタ帳',desc:'アイデア・思いつきメモ'},
   todos:{icon:'🔖',label:'やりたいことリスト',desc:'描きたいものチェック'},
-  manga:{icon:'🎭',label:'AI漫画展示室',desc:'生成作品ギャラリー'},
+  manga:{icon:'🎞',label:'ギャラリー',desc:'漫画・イラスト作品集'},
+  pairings:{icon:'💞',label:'CP紹介',desc:'カップリングの紹介ページ'},
 };
-const FOLDER_ORDER = ['characters','references','auNotes','ideas','todos','manga'];
+const FOLDER_ORDER = ['characters','references','auNotes','ideas','todos','manga','pairings'];
 
 const COLLECTIONS = {
   references:{ singular:'資料', fields:[
@@ -191,9 +207,18 @@ const COLLECTIONS = {
   ]},
   manga:{ singular:'作品', fields:[
     {key:'title',label:'タイトル',type:'text',required:true},
+    {key:'category',label:'種類',type:'select',options:['漫画','イラスト'],required:true},
+    {key:'origin',label:'制作方法',type:'select',options:['手描き','AI生成'],required:true},
     {key:'date',label:'制作日',type:'date'},
     {key:'images',label:'画像',type:'imageMultiple'},
     {key:'comment',label:'感想・メモ',type:'textarea'}
+  ]},
+  pairings:{ singular:'CP', fields:[
+    {key:'title',label:'CP名',type:'text',required:true},
+    {key:'linkedCharacterIds',label:'登場キャラクター',type:'characterMultiSelect'},
+    {key:'tagline',label:'一言・テーマ',type:'text'},
+    {key:'items',label:'お気に入りの小物',type:'labeledImages'},
+    {key:'description',label:'紹介文',type:'textarea'}
   ]}
 };
 
@@ -210,7 +235,8 @@ const COLOR_PALETTE = [
 /* ===================== state ===================== */
 const state = {
   view:'home', collection:null, id:null, editId:null,
-  search:'', tagFilter:null, listCache:[], todosCache:[],
+  search:'', tagFilter:null, categoryFilter:null, originFilter:null,
+  listCache:[], todosCache:[], charMapCache:null,
   draft:null, draftFor:null
 };
 
@@ -252,6 +278,16 @@ function processImage(file, maxDim, quality){
 
 function flourishSVG(){
   return '<svg width="80" height="28" viewBox="0 0 80 28" fill="none"><path d="M2 24 C20 24 26 4 40 4 C54 4 60 24 78 24" stroke="#B6904F" stroke-width="1.2"/><circle cx="40" cy="4" r="2.4" fill="#B6904F"/></svg>';
+}
+
+function doodleSVG(){
+  return '<svg width="48" height="48" viewBox="0 0 48 48" fill="none">'
+    + '<path d="M9 16c-2 4 1 8 6 6-3 4-1 8 4 7" stroke="#C58E96" stroke-width="1" stroke-linecap="round"/>'
+    + '<path d="M30 6l1.8 4.6 4.6 1.8-4.6 1.8-1.8 4.6-1.8-4.6-4.6-1.8 4.6-1.8z" stroke="#B6904F" stroke-width="1" stroke-linejoin="round"/>'
+    + '<circle cx="40" cy="28" r="1.3" fill="#C58E96"/>'
+    + '<circle cx="12" cy="6" r="1" fill="#B6904F"/>'
+    + '<path d="M34 36c1.5-3 5-3 5 0s-3.5 5-5 6c-1.5-1-5-3.5-5-6s3.5-3 5 0z" stroke="#C58E96" stroke-width="1"/>'
+    + '</svg>';
 }
 
 function floatingBackButton(action, collection, id, raised){
@@ -296,10 +332,13 @@ function buildIndexEntry(collection, detail){
   }
   if(collection==='manga'){
     const cover = (detail.images && detail.images.length) ? detail.images[0] : null;
-    return {id:detail.id, title:detail.title||'', date:detail.date||'', tags:detail.tags||[], image:cover};
+    return {id:detail.id, title:detail.title||'', date:detail.date||'', tags:detail.tags||[], image:cover, category:detail.category||'', origin:detail.origin||''};
   }
   if(collection==='auNotes'){
     return {id:detail.id, title:detail.title||'', tags:detail.tags||[], linkedCharacterIds:detail.linkedCharacterIds||[]};
+  }
+  if(collection==='pairings'){
+    return {id:detail.id, title:detail.title||'', tags:detail.tags||[], linkedCharacterIds:detail.linkedCharacterIds||[], tagline:detail.tagline||''};
   }
   return {id:detail.id, title:detail.title||'', tags:detail.tags||[], image:detail.image||null};
 }
@@ -317,6 +356,7 @@ async function renderHome(){
   }).join('');
   return ''
     + '<div class="home-hero">'
+    +   '<div class="doodle-accent">'+doodleSVG()+'</div>'
     +   '<div class="hero-flourish">'+flourishSVG()+'</div>'
     +   '<h1>創作資料室</h1>'
     +   '<p>Private Atelier Archive</p>'
@@ -332,6 +372,8 @@ async function renderHome(){
 /* ===================== 描画:一覧 ===================== */
 function matchesFilter(e, search, tagFilter){
   if(tagFilter && (!e.tags || e.tags.indexOf(tagFilter)===-1)) return false;
+  if(state.categoryFilter && e.category !== state.categoryFilter) return false;
+  if(state.originFilter && e.origin !== state.originFilter) return false;
   if(!search) return true;
   const q = search.trim().toLowerCase();
   if(!q) return true;
@@ -355,9 +397,28 @@ function cardHTML(collection, e){
       + '<div class="char-card-tags">'+tagsHTML+'</div>'
       + '</div>';
   }
+  if(collection==='pairings'){
+    const charMap = state.charMapCache || {};
+    const ids = e.linkedCharacterIds || [];
+    const avatars = ids.slice(0,2).map(function(cid){
+      const c = charMap[cid];
+      if(c && c.image) return '<img class="pairing-avatar" src="'+c.image+'">';
+      return '<div class="pairing-avatar empty">?</div>';
+    }).join('');
+    const namesLine = ids.map(function(cid){ const c=charMap[cid]; return c?esc(c.name):''; }).filter(Boolean).join(' × ');
+    return '<div class="pairing-card" data-action="open-entry" data-collection="pairings" data-id="'+e.id+'">'
+      + '<div class="pairing-avatars">'+avatars+'</div>'
+      + '<div class="pairing-title">'+(esc(e.title)||'(名前未設定)')+'</div>'
+      + '<div class="pairing-names">'+namesLine+'</div>'
+      + '</div>';
+  }
   const meta = FOLDER_META[collection];
   const titleText = e.title || '(無題)';
-  const subLine = (collection==='manga' && e.date) ? '<div class="entry-sub">'+esc(e.date)+'</div>' : '';
+  let subLine = '';
+  if(collection==='manga'){
+    const sub = [e.category, e.origin, e.date].filter(Boolean).join(' ・ ');
+    subLine = sub ? '<div class="entry-sub">'+esc(sub)+'</div>' : '';
+  }
   const tagsHTML2 = (e.tags||[]).slice(0,4).map(function(t){ return '<span class="chip">#'+esc(t)+'</span>'; }).join('');
   return '<div class="entry-card" data-action="open-entry" data-collection="'+collection+'" data-id="'+e.id+'">'
     + '<div class="entry-thumb">'+(e.image ? '<img src="'+e.image+'" alt="">' : '<span class="thumb-empty">'+meta.icon+'</span>')+'</div>'
@@ -376,6 +437,18 @@ function renderTagChips(allTags){
   }).join('') + '</div>';
 }
 
+function renderGalleryFilters(){
+  const cats = ['漫画','イラスト'];
+  const origins = ['手描き','AI生成'];
+  const catChips = cats.map(function(c){
+    return '<span class="chip selectable '+(state.categoryFilter===c?'active':'')+'" data-action="set-category-filter" data-cat="'+c+'">'+c+'</span>';
+  }).join('');
+  const originChips = origins.map(function(o){
+    return '<span class="chip selectable '+(state.originFilter===o?'active':'')+'" data-action="set-origin-filter" data-origin="'+o+'">'+o+'</span>';
+  }).join('');
+  return '<div class="cat-filter-row">'+catChips+'</div><div class="cat-filter-row">'+originChips+'</div>';
+}
+
 function renderEntriesGrid(collection){
   const list = state.listCache || [];
   const filtered = list.filter(function(e){ return matchesFilter(e, state.search, state.tagFilter); });
@@ -391,7 +464,9 @@ function updateFilterUI(){
   const allTags = Array.from(new Set((state.listCache||[]).reduce(function(acc,e){ return acc.concat(e.tags||[]); }, []))).sort();
   const tagEl = document.getElementById('filter-tags');
   const gridEl = document.getElementById('entries-grid');
+  const galleryEl = document.getElementById('gallery-filters');
   if(tagEl) tagEl.innerHTML = renderTagChips(allTags);
+  if(galleryEl) galleryEl.innerHTML = renderGalleryFilters();
   if(gridEl) gridEl.innerHTML = renderEntriesGrid(state.collection);
 }
 
@@ -399,7 +474,15 @@ async function renderList(collection){
   const idx = await loadIndex(collection);
   state.listCache = idx;
   const meta = FOLDER_META[collection];
+  if(collection==='pairings'){
+    const chars = await loadIndex('characters');
+    const charMap = {};
+    chars.forEach(function(c){ charMap[c.id] = c; });
+    state.charMapCache = charMap;
+  }
   const allTags = Array.from(new Set(idx.reduce(function(acc,e){ return acc.concat(e.tags||[]); }, []))).sort();
+  const gridClass = (collection==='characters'||collection==='pairings') ? 'char-grid' : 'entry-list';
+  const galleryFiltersHTML = collection==='manga' ? '<div id="gallery-filters">'+renderGalleryFilters()+'</div>' : '';
   return ''
     + '<div class="app-header">'
     +   '<button class="icon-btn" data-action="go-home" aria-label="ホームへ戻る">←</button>'
@@ -409,8 +492,9 @@ async function renderList(collection){
     +   '<input id="search-input" type="text" placeholder="名前・タイトル・タグで検索" value="'+esc(state.search)+'">'
     +   '<button class="btn btn-primary" data-action="add-entry" data-collection="'+collection+'">＋ 新規追加</button>'
     + '</div>'
+    + galleryFiltersHTML
     + '<div id="filter-tags">'+renderTagChips(allTags)+'</div>'
-    + '<div id="entries-grid" class="'+(collection==='characters'?'char-grid':'entry-list')+'">'+renderEntriesGrid(collection)+'</div>'
+    + '<div id="entries-grid" class="'+gridClass+'">'+renderEntriesGrid(collection)+'</div>'
     + floatingBackButton('go-home');
 }
 
@@ -490,6 +574,11 @@ async function renderCharacterDetail(id){
   const lockAttr = e.image ? ' data-action="open-image" data-src="'+e.image+'"' : '';
   const allChars = await loadIndex('characters');
   const commentsHTML = await renderCommentSection(e, allChars);
+  const pairingIdx = await loadIndex('pairings');
+  const relatedPairings = pairingIdx.filter(function(p){ return (p.linkedCharacterIds||[]).indexOf(e.id)!==-1; });
+  const pairingHTML = relatedPairings.length ? ('<div class="field-block"><div class="field-label">CP紹介</div><div class="pairing-chip-row">' + relatedPairings.map(function(p){
+    return '<span class="chip selectable" data-action="open-entry" data-collection="pairings" data-id="'+p.id+'">💞 '+esc(p.title)+'</span>';
+  }).join('') + '</div></div>') : '';
   return ''
     + '<div class="app-header">'
     +   '<button class="icon-btn" data-action="go-back-list" data-collection="characters">←</button>'
@@ -506,6 +595,7 @@ async function renderCharacterDetail(id){
     +   introHTML
     +   costumeHTML
     +   noteHTML
+    +   pairingHTML
     +   commentsHTML
     +   '<div class="detail-actions">'
     +     '<button class="btn" data-action="edit-entry" data-collection="characters" data-id="'+e.id+'">編集する</button>'
@@ -544,6 +634,56 @@ async function renderCommentSection(e, allChars){
   return '<div class="comment-section"><div class="field-label">みんなのコメント</div>'+list+addForm+'</div>';
 }
 
+async function renderPairingDetail(id){
+  const e = await loadDetail('pairings', id);
+  if(!e){
+    return '<div class="app-header"><button class="icon-btn" data-action="go-back-list" data-collection="pairings">←</button><div class="header-title">💞 CP紹介</div></div><div class="empty-state">データが見つかりませんでした。</div>';
+  }
+  const chars = await loadIndex('characters');
+  const charMap = {};
+  chars.forEach(function(c){ charMap[c.id] = c; });
+  const ids = e.linkedCharacterIds || [];
+  const avatarsHTML = ids.map(function(cid, i){
+    const c = charMap[cid];
+    const avatar = c && c.image ? '<img class="pairing-avatar-lg" src="'+c.image+'">' : '<div class="pairing-avatar-lg empty">?</div>';
+    const connector = (i < ids.length-1) ? '<span class="pairing-connector">×</span>' : '';
+    return avatar + connector;
+  }).join('');
+  const namesHTML = ids.map(function(cid){
+    const c = charMap[cid];
+    return c ? '<span class="chip selectable" data-action="open-entry" data-collection="characters" data-id="'+c.id+'">'+esc(c.name)+'</span>' : '';
+  }).join('');
+  const taglineHTML = e.tagline ? '<div class="pairing-tagline">'+esc(e.tagline)+'</div>' : '';
+  let itemsHTML = '';
+  if(e.items && e.items.length){
+    itemsHTML = '<div class="field-block"><div class="field-label">お気に入りの小物</div><div class="thumb-row">' + e.items.map(function(it){
+      return '<div class="thumb-item"><img src="'+it.image+'" data-action="open-image" data-src="'+it.image+'"><div class="cap">'+esc(it.label||'')+'</div></div>';
+    }).join('') + '</div></div>';
+  }
+  const descHTML = e.description ? '<div class="field-block"><div class="field-label">紹介文</div><p class="body-text">'+esc(e.description).replace(/\n/g,'<br>')+'</p></div>' : '';
+  const tagsHTML = (e.tags||[]).length ? '<div class="entry-tags center">' + e.tags.map(function(t){ return '<span class="chip">#'+esc(t)+'</span>'; }).join('') + '</div>' : '';
+  return ''
+    + '<div class="app-header">'
+    +   '<button class="icon-btn" data-action="go-back-list" data-collection="pairings">←</button>'
+    +   '<div class="header-title">💞 CP紹介</div>'
+    +   '<button class="header-edit-btn" data-action="edit-entry" data-collection="pairings" data-id="'+e.id+'">✎ 編集</button>'
+    + '</div>'
+    + '<div class="detail-page">'
+    +   '<div class="pairing-hero-avatars">'+avatarsHTML+'</div>'
+    +   '<div class="name-plate">'+(esc(e.title)||'(名前未設定)')+'</div>'
+    +   '<div class="pairing-chip-row">'+namesHTML+'</div>'
+    +   taglineHTML
+    +   tagsHTML
+    +   itemsHTML
+    +   descHTML
+    +   '<div class="detail-actions">'
+    +     '<button class="btn" data-action="edit-entry" data-collection="pairings" data-id="'+e.id+'">編集する</button>'
+    +     '<button class="btn btn-danger" data-action="delete-entry" data-collection="pairings" data-id="'+e.id+'">削除する</button>'
+    +   '</div>'
+    + '</div>'
+    + floatingBackButton('go-back-list', 'pairings');
+}
+
 /* ===================== 描画:フォーム(共通4種) ===================== */
 function renderImageFieldControl(key, val){
   const preview = val ? '<div class="thumb-item single"><img src="'+val+'"><button type="button" class="thumb-x" data-action="clear-image" data-field="'+key+'">×</button></div>' : '';
@@ -562,18 +702,18 @@ function renderImageMultiControl(key, arr){
     + '<label class="btn file-btn">＋画像を追加<input type="file" accept="image/*" multiple data-action-file="multi-image" data-field="'+key+'" hidden></label>'
     + '</div>';
 }
-function renderCostumeRows(costumes){
-  costumes = costumes || [];
-  const rows = costumes.map(function(c,i){
+function renderLabeledImageRows(key, items){
+  items = items || [];
+  const rows = items.map(function(c,i){
     return '<div class="costume-row">'
       + '<img src="'+c.image+'" class="costume-thumb">'
-      + '<input type="text" class="costume-label-input" data-index="'+i+'" value="'+esc(c.label||'')+'" placeholder="衣装名(普段着など)">'
-      + '<button type="button" class="thumb-x" data-action="remove-costume" data-index="'+i+'">×</button>'
+      + '<input type="text" class="labeled-image-input" data-field="'+key+'" data-index="'+i+'" value="'+esc(c.label||'')+'" placeholder="名前(普段着など)">'
+      + '<button type="button" class="thumb-x" data-action="remove-labeled-image" data-field="'+key+'" data-index="'+i+'">×</button>'
       + '</div>';
   }).join('');
-  return '<div class="costume-editor" data-field="costumes">'
+  return '<div class="costume-editor" data-field="'+key+'">'
     + rows
-    + '<label class="btn file-btn">＋衣装を追加<input type="file" accept="image/*" data-action-file="costume-image" hidden></label>'
+    + '<label class="btn file-btn">＋追加<input type="file" accept="image/*" data-action-file="labeled-image" data-field="'+key+'" hidden></label>'
     + '</div>';
 }
 function renderField(f, draft){
@@ -587,11 +727,18 @@ function renderField(f, draft){
   if(f.type==='date'){
     return '<div class="field"><label>'+f.label+'</label><input type="date" name="field_'+f.key+'" value="'+esc(val||'')+'"></div>';
   }
+  if(f.type==='select'){
+    const opts = (f.options||[]).map(function(o){ return '<option value="'+esc(o)+'" '+(val===o?'selected':'')+'>'+esc(o)+'</option>'; }).join('');
+    return '<div class="field"><label>'+f.label+(f.required?' <span class="req">*</span>':'')+'</label><select name="field_'+f.key+'">'+opts+'</select></div>';
+  }
   if(f.type==='image'){
     return '<div class="field"><label>'+f.label+'</label>'+renderImageFieldControl(f.key, val)+'</div>';
   }
   if(f.type==='imageMultiple'){
     return '<div class="field"><label>'+f.label+'</label>'+renderImageMultiControl(f.key, val)+'</div>';
+  }
+  if(f.type==='labeledImages'){
+    return '<div class="field"><label>'+f.label+'</label>'+renderLabeledImageRows(f.key, val)+'</div>';
   }
   return '';
 }
@@ -608,7 +755,8 @@ async function renderForm(collection, editId){
     state.draftFor = draftKey;
   }
   let charOptionsHTML = '';
-  if(collection==='auNotes'){
+  const needsCharSelect = cfg.fields.some(function(f){ return f.type==='characterMultiSelect'; });
+  if(needsCharSelect){
     const chars = await loadIndex('characters');
     const linked = state.draft.linkedCharacterIds || [];
     charOptionsHTML = chars.length ? chars.map(function(c){
@@ -667,7 +815,7 @@ async function renderCharacterForm(editId){
     +   '<div class="field"><label>性格</label><input type="text" name="field_personality" value="'+esc(state.draft.personality||'')+'"></div>'
     +   '<div class="field"><label>関係</label><input type="text" name="field_relationships" value="'+esc(state.draft.relationships||'')+'"></div>'
     +   '<div class="field"><label>紹介文</label><textarea name="field_intro" placeholder="このキャラクターの紹介文・プロフィール文など">'+esc(state.draft.intro||'')+'</textarea></div>'
-    +   '<div class="field"><label>衣装ギャラリー</label>'+renderCostumeRows(state.draft.costumes)+'</div>'
+    +   '<div class="field"><label>衣装ギャラリー</label>'+renderLabeledImageRows('costumes', state.draft.costumes)+'</div>'
     +   '<div class="field"><label>関係性・コメント</label><textarea name="field_relationNote">'+esc(state.draft.relationNote||'')+'</textarea></div>'
     +   '<div class="field"><label>タグ(#で区切って入力)</label><input type="text" name="field_tagsRaw" value="'+esc(state.draft._tagsRaw||'')+'" placeholder="#兄妹 #貴族"></div>'
     +   '<div class="form-actions">'
@@ -693,9 +841,10 @@ function captureFormDraft(){
     if(el.checked) groups[key].push(el.value);
   });
   Object.keys(groups).forEach(function(k){ state.draft[k]=groups[k]; });
-  formEl.querySelectorAll('.costume-label-input').forEach(function(el){
+  formEl.querySelectorAll('.labeled-image-input').forEach(function(el){
+    const field = el.dataset.field;
     const i = Number(el.dataset.index);
-    if(state.draft.costumes && state.draft.costumes[i]) state.draft.costumes[i].label = el.value;
+    if(state.draft[field] && state.draft[field][i]) state.draft[field][i].label = el.value;
   });
 }
 
@@ -796,7 +945,11 @@ async function renderApp(){
   if(state.view==='home') html = await renderHome();
   else if(state.view==='list') html = await renderList(state.collection);
   else if(state.view==='form') html = await renderForm(state.collection, state.editId);
-  else if(state.view==='detail') html = (state.collection==='characters') ? await renderCharacterDetail(state.id) : await renderDetail(state.collection, state.id);
+  else if(state.view==='detail'){
+    if(state.collection==='characters') html = await renderCharacterDetail(state.id);
+    else if(state.collection==='pairings') html = await renderPairingDetail(state.id);
+    else html = await renderDetail(state.collection, state.id);
+  }
   else if(state.view==='todos') html = await renderTodos();
   app.innerHTML = html;
 }
@@ -812,9 +965,10 @@ async function onAppClick(e){
   } else if(action==='go-folder'){
     const key = t.dataset.collection;
     if(key==='todos'){ state.view = 'todos'; }
-    else { state.view = 'list'; state.collection = key; state.search=''; state.tagFilter=null; }
+    else { state.view = 'list'; state.collection = key; state.search=''; state.tagFilter=null; state.categoryFilter=null; state.originFilter=null; }
     renderApp();
   } else if(action==='go-back-list'){
+    state.categoryFilter=null; state.originFilter=null;
     state.view = 'list'; state.collection = t.dataset.collection; renderApp();
   } else if(action==='add-entry'){
     state.draft = null; state.draftFor = null;
@@ -835,6 +989,12 @@ async function onAppClick(e){
   } else if(action==='set-tag-filter'){
     state.tagFilter = (state.tagFilter===t.dataset.tag) ? null : t.dataset.tag;
     updateFilterUI();
+  } else if(action==='set-category-filter'){
+    state.categoryFilter = (state.categoryFilter===t.dataset.cat) ? null : t.dataset.cat;
+    updateFilterUI();
+  } else if(action==='set-origin-filter'){
+    state.originFilter = (state.originFilter===t.dataset.origin) ? null : t.dataset.origin;
+    updateFilterUI();
   } else if(action==='clear-image'){
     captureFormDraft();
     state.draft[t.dataset.field] = null;
@@ -843,9 +1003,9 @@ async function onAppClick(e){
     captureFormDraft();
     state.draft[t.dataset.field].splice(Number(t.dataset.index),1);
     renderApp();
-  } else if(action==='remove-costume'){
+  } else if(action==='remove-labeled-image'){
     captureFormDraft();
-    state.draft.costumes.splice(Number(t.dataset.index),1);
+    state.draft[t.dataset.field].splice(Number(t.dataset.index),1);
     renderApp();
   } else if(action==='open-image'){
     openLightbox(t.dataset.src);
@@ -943,12 +1103,13 @@ async function onAppChange(e){
       state.draft[target.dataset.field].push(dataUrl);
     }
     renderApp();
-  } else if(target.matches('input[type=file][data-action-file="costume-image"]')){
+  } else if(target.matches('input[type=file][data-action-file="labeled-image"]')){
     const file = target.files[0]; if(!file) return;
     const dataUrl = await processImage(file);
     captureFormDraft();
-    if(!state.draft.costumes) state.draft.costumes = [];
-    state.draft.costumes.push({label:'', image:dataUrl});
+    const field = target.dataset.field;
+    if(!state.draft[field]) state.draft[field] = [];
+    state.draft[field].push({label:'', image:dataUrl});
     renderApp();
   } else if(target.matches('input[type=file][data-action-file="import-backup"]')){
     const file = target.files[0];
