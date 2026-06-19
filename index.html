@@ -345,7 +345,7 @@ function formatDaysLeft(daysLeft){
 }
 
 function processImage(file, maxDim, quality){
-  maxDim = maxDim || 720; quality = quality || 0.78;
+  maxDim = maxDim || 640; quality = quality || 0.74;
   return new Promise(function(resolve, reject){
     const reader = new FileReader();
     reader.onload = function(e){
@@ -409,6 +409,48 @@ async function kvListKeys(){
     return keys;
   }catch(e){ return []; }
 }
+
+function calcStorageUsageMB(){
+  try{
+    let total = 0;
+    for(let i=0;i<localStorage.length;i++){
+      const k = localStorage.key(i);
+      total += (k.length + (localStorage.getItem(k)||'').length);
+    }
+    return (total / (1024*1024));
+  }catch(e){ return 0; }
+}
+
+async function showStorageInfo(){
+  const usedMB = calcStorageUsageMB();
+  const estLimitMB = 5;
+  const pct = Math.min(100, Math.round((usedMB/estLimitMB)*100));
+  const collections = ['characters','references','auNotes','ideas','manga','pairings','tasks'];
+  let breakdown = '';
+  for(const c of collections){
+    const idx = await loadIndex(c);
+    if(idx.length){
+      const labelClean = ((FOLDER_META[c]||{}).label||c).replace(/[^\u3040-\u30FF\u4E00-\u9FFFa-zA-Z]/g,'');
+      breakdown += '<div class="info-row"><div class="k">'+esc(labelClean)+'</div><div class="v">'+idx.length+'件</div></div>';
+    }
+  }
+  const overlay = document.createElement('div');
+  overlay.className = 'confirm-overlay';
+  overlay.innerHTML = ''
+    + '<div class="confirm-box" style="max-width:320px;text-align:left;">'
+    +   '<div class="field-label" style="text-align:center;margin-bottom:8px;">保存容量の目安</div>'
+    +   '<div class="progress-bar-track"><div class="progress-bar-fill" style="width:'+pct+'%;background:'+(pct>80?'#E0314B':'var(--color-gold)')+'"></div></div>'
+    +   '<div class="progress-pct" style="text-align:center;">約 '+usedMB.toFixed(1)+'MB 使用中(目安上限 約'+estLimitMB+'MB)</div>'
+    +   '<div class="info-list" style="margin-top:10px;">'+breakdown+'</div>'
+    +   '<p class="muted" style="font-size:11px;line-height:1.6;margin-top:10px;">保存できない場合は、不要な画像や作品を削除するか、バックアップを書き出してから一部データを整理してください。</p>'
+    +   '<div class="row" style="margin-top:14px;"><button type="button" class="btn btn-primary" data-confirm="no">閉じる</button></div>'
+    + '</div>';
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', function(ev){
+    if(ev.target===overlay || ev.target.closest('[data-confirm]')) overlay.remove();
+  });
+}
+
 async function loadJSON(key, fallback){
   const raw = await kvGet(key);
   if(raw==null) return fallback;
@@ -521,6 +563,7 @@ async function renderHome(){
     + bannerHTML
     + '<div class="home-footer">'
     +   '<button class="btn" data-action="export-backup">📤 バックアップを書き出す</button>'
+    +   '<button class="btn" data-action="show-storage-info">📊 保存容量を確認</button>'
     +   '<label class="btn file-btn">📥 バックアップから復元<input type="file" accept="application/json" data-action-file="import-backup" hidden></label>'
     +   '<p class="muted small">データはこの端末のブラウザ内に保存されます。同じURLを同じブラウザで開いたときだけデータが読み込まれます。機種変更やブラウザの変更の際は、書き出し機能でバックアップを取っておきましょう。</p>'
     + '</div>';
@@ -1399,6 +1442,8 @@ async function onAppClick(e){
     openLightbox(t.dataset.src);
   } else if(action==='export-backup'){
     await exportBackup();
+  } else if(action==='show-storage-info'){
+    await showStorageInfo();
   } else if(action==='toggle-todo'){
     const items = state.todosCache || await loadJSON('idx:todos',[]);
     const found = items.filter(function(x){ return x.id===t.dataset.id; });
@@ -1491,7 +1536,7 @@ async function onAppSubmit(e){
     detail.completed = (detail.steps && detail.steps.length>0) && detail.completedSteps.length === detail.steps.length;
   }
   const ok = await saveDetail(collection, id, detail);
-  if(!ok){ showToast('保存に失敗しました。もう一度お試しください。'); return; }
+  if(!ok){ showToast('保存に失敗しました。保存容量がいっぱいの可能性があります。ホーム画面の「保存容量を確認」をご覧ください。'); return; }
   let idx = await loadIndex(collection);
   idx = idx.filter(function(x){ return x.id!==id; });
   idx.push(buildIndexEntry(collection, detail));
@@ -1513,7 +1558,7 @@ async function onAppChange(e){
     const files = Array.from(target.files||[]);
     captureFormDraft();
     for(let i=0;i<files.length;i++){
-      const dataUrl = await processImage(files[i]);
+      const dataUrl = await processImage(files[i], 560, 0.68);
       if(!state.draft[target.dataset.field]) state.draft[target.dataset.field] = [];
       state.draft[target.dataset.field].push(dataUrl);
     }
