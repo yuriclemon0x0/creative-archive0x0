@@ -129,6 +129,8 @@ a{color:inherit;}
 .loading{text-align:center;padding:60px 20px;color:var(--color-text-soft);font-style:italic;}
 
 .detail-page{padding:18px 22px 44px;text-align:center;}
+.info-panel{background:rgba(255,255,255,.82);border-radius:14px;padding:14px 14px 4px;margin-top:14px;text-align:left;}
+.info-panel .field-block:first-child{margin-top:0;}
 .locket{width:120px;height:150px;margin:6px auto 0;border-radius:50%;border:3px solid var(--color-gold);box-shadow:0 0 0 2px var(--color-bg),0 0 0 4px var(--color-gold-light),0 4px 10px rgba(0,0,0,.16);overflow:hidden;background:#fff;position:relative;}
 .locket img{width:100%;height:100%;object-fit:cover;}
 .locket.empty{display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--color-text-soft);}
@@ -189,6 +191,43 @@ textarea{min-height:80px;resize:vertical;}
 .lightbox-overlay{position:fixed;inset:0;background:rgba(20,15,10,.88);display:flex;align-items:center;justify-content:center;z-index:1000;padding:24px;}
 .lightbox-overlay img{max-width:100%;max-height:90vh;border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,.5);}
 .lightbox-close{position:absolute;top:18px;right:18px;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.92);border:none;font-size:18px;cursor:pointer;color:var(--color-text);}
+
+.confirm-overlay{position:fixed;inset:0;background:rgba(60,45,75,.45);display:flex;align-items:center;justify-content:center;z-index:1100;padding:24px;}
+.confirm-box{background:#fffaf2;border-radius:14px;padding:22px 20px;max-width:300px;width:100%;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.25);}
+.confirm-box p{font-size:13.5px;line-height:1.7;margin:0 0 18px;color:var(--color-text);}
+.confirm-box .row{display:flex;gap:10px;justify-content:center;}
+.app-toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:rgba(60,45,75,.92);color:#fff;font-size:12.5px;padding:10px 18px;border-radius:20px;z-index:1200;max-width:80%;text-align:center;box-shadow:0 6px 16px rgba(0,0,0,.25);}
+
+.task-banner{margin:4px 20px 18px;background:rgba(255,255,255,.85);border:1.5px solid var(--color-lavender-line);border-radius:14px;padding:14px 16px;}
+.task-banner-rest{border-top:1px dotted rgba(176,144,79,.4);margin-top:12px;padding-top:10px;display:flex;flex-direction:column;gap:10px;}
+.task-banner-mini{cursor:pointer;}
+.task-banner-mini-name{font-size:12px;color:var(--color-navy);margin-right:8px;}
+.task-banner-mini-days{font-size:11px;font-weight:600;float:right;}
+.progress-bar-track.mini{height:5px;margin-top:4px;clear:both;}
+.task-banner-more{text-align:center;font-size:11.5px;color:var(--color-text-soft);margin-top:10px;cursor:pointer;}
+.task-banner-title{font-family:'Shippori Mincho',serif;font-size:12.5px;color:var(--color-text-soft);margin-bottom:8px;letter-spacing:.04em;}
+.task-banner-name{font-family:'Shippori Mincho',serif;font-size:14.5px;color:var(--color-navy);margin-bottom:4px;}
+.task-banner-row{display:flex;justify-content:space-between;align-items:baseline;font-size:11.5px;color:var(--color-text-soft);margin-bottom:8px;}
+.task-banner-days{font-weight:600;font-size:13px;}
+.progress-bar-track{background:rgba(176,144,79,.18);border-radius:6px;height:8px;overflow:hidden;}
+.progress-bar-fill{height:100%;border-radius:6px;transition:width .2s ease;}
+.progress-pct{font-size:11px;color:var(--color-text-soft);margin-top:5px;text-align:right;}
+
+.task-meta-row{display:flex;justify-content:center;gap:18px;margin:10px 0 4px;font-size:12px;color:var(--color-text-soft);}
+.task-meta-row strong{display:block;font-size:15px;color:var(--color-navy);margin-bottom:2px;}
+.step-checklist{display:flex;flex-direction:column;gap:7px;margin-top:6px;}
+.step-row{display:flex;align-items:center;gap:9px;font-size:13.5px;padding:6px 2px;border-bottom:1px dotted rgba(176,144,79,.4);}
+.step-row.done span{text-decoration:line-through;color:var(--color-text-soft);}
+.step-row input{width:16px;height:16px;}
+.steps-editor{display:flex;flex-direction:column;gap:8px;}
+.step-edit-row{display:flex;align-items:center;gap:8px;}
+.step-edit-row input{flex:1;}
+.step-add-row{display:flex;gap:8px;}
+.step-template-row{display:flex;gap:8px;margin-top:6px;}
+.step-template-row .btn{flex:1;font-size:11.5px;padding:8px 6px;}
+.step-add-row input{flex:1;}
+.task-card-progress{margin-top:6px;}
+
 </style>
 </head>
 <body>
@@ -203,8 +242,13 @@ const FOLDER_META = {
   todos:{icon:'⋆✦',label:'𝚆𝚒𝚜𝚑 𝙻𝚒𝚜𝚝📝',desc:'描きたいものリスト'},
   manga:{icon:'⋆✦',label:'𝙶𝚊𝚕𝚕𝚎𝚛𝚢🖼️',desc:'漫画・イラスト集'},
   pairings:{icon:'⋆✦',label:'𝚁𝚎𝚕𝚊𝚝𝚒𝚘𝚗💌',desc:'CP・関係性紹介'},
+  tasks:{icon:'⋆✦',label:'𝚃𝚊𝚜𝚔 𝚃𝚛𝚊𝚌𝚔𝚎𝚛🍒',desc:'制作タスク・進捗管理'},
 };
-const FOLDER_ORDER = ['characters','references','auNotes','ideas','todos','manga','pairings'];
+const FOLDER_ORDER = ['characters','references','auNotes','ideas','todos','manga','pairings','tasks'];
+const TASK_STEP_TEMPLATES = {
+  manga:['ネーム','ラフ','ペン入れ','下塗り','グレスケ','描き文字・仕上げ処理','完成'],
+  illustration:['構想','大ラフ・アタリ','ラフ','カラーラフ','清書','仕上げ・加工','完成']
+};
 
 const COLLECTIONS = {
   references:{ singular:'資料', fields:[
@@ -237,7 +281,8 @@ const COLLECTIONS = {
     {key:'tagline',label:'一言・テーマ',type:'text'},
     {key:'items',label:'お気に入りの小物',type:'labeledImages'},
     {key:'description',label:'紹介文',type:'textarea'}
-  ]}
+  ]},
+  tasks:{ singular:'タスク', fields:[] }
 };
 
 const COLOR_PALETTE = [
@@ -265,6 +310,39 @@ function esc(s){
   });
 }
 function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+
+function taskProgress(t){
+  const steps = (t && t.steps) || [];
+  const done = (t && t.completedSteps) || [];
+  if(!steps.length) return 0;
+  const doneCount = steps.filter(function(s){ return done.indexOf(s.id)!==-1; }).length;
+  return Math.round((doneCount / steps.length) * 100);
+}
+function taskCurrentStepLabel(t){
+  const steps = (t && t.steps) || [];
+  const done = (t && t.completedSteps) || [];
+  const next = steps.filter(function(s){ return done.indexOf(s.id)===-1; })[0];
+  return next ? next.label : (steps.length ? '全工程完了' : '工程未設定');
+}
+function daysUntil(dueDateStr){
+  if(!dueDateStr) return null;
+  const due = new Date(dueDateStr+'T00:00:00');
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  return Math.ceil((due - today) / 86400000);
+}
+function taskAccentColor(daysLeft){
+  if(daysLeft==null) return {bar:'var(--color-gold)', text:'var(--color-navy)'};
+  if(daysLeft<=1) return {bar:'#E0314B', text:'#E0314B'};
+  if(daysLeft<=3) return {bar:'#E0529E', text:'#D6469A'};
+  return {bar:'var(--color-gold)', text:'var(--color-navy)'};
+}
+function formatDaysLeft(daysLeft){
+  if(daysLeft==null) return '締切未設定';
+  if(daysLeft<0) return '締切超過 '+Math.abs(daysLeft)+'日';
+  if(daysLeft===0) return '本日締切';
+  return 'あと'+daysLeft+'日';
+}
 
 function processImage(file, maxDim, quality){
   maxDim = maxDim || 720; quality = quality || 0.78;
@@ -361,10 +439,66 @@ function buildIndexEntry(collection, detail){
   if(collection==='ideas'){
     return {id:detail.id, title:detail.title||'', tags:detail.tags||[], image:detail.image||null, genre:detail.genre||''};
   }
+  if(collection==='tasks'){
+    return {
+      id:detail.id, title:detail.title||'', category:detail.category||'',
+      startDate:detail.startDate||'', dueDate:detail.dueDate||'',
+      steps:detail.steps||[], completedSteps:detail.completedSteps||[],
+      completed: !!detail.completed
+    };
+  }
   return {id:detail.id, title:detail.title||'', tags:detail.tags||[], image:detail.image||null};
 }
 
 /* ===================== 描画:ホーム ===================== */
+async function renderTaskBanner(){
+  const idx = await loadIndex('tasks');
+  const active = idx.filter(function(t){ return !t.completed; });
+  active.sort(function(a,b){
+    const da = a.dueDate ? new Date(a.dueDate) : new Date(8640000000000000);
+    const db = b.dueDate ? new Date(b.dueDate) : new Date(8640000000000000);
+    return da - db;
+  });
+  if(!active.length){
+    return '<div class="task-banner" data-action="go-folder" data-collection="tasks">'
+      + '<div class="task-banner-title">🍒 デイリータスク・進捗管理</div>'
+      + '<p class="muted" style="font-size:12.5px;margin:0;">進行中のタスクはありません。新しい制作タスクを登録してみましょう。</p>'
+      + '</div>';
+  }
+  const top = active.slice(0,3);
+  const main = top[0];
+  const mainDaysLeft = daysUntil(main.dueDate);
+  const mainAccent = taskAccentColor(mainDaysLeft);
+  const mainPct = taskProgress(main);
+  const mainStep = taskCurrentStepLabel(main);
+  const restHTML = top.slice(1).map(function(t){
+    const daysLeft = daysUntil(t.dueDate);
+    const accent = taskAccentColor(daysLeft);
+    const pct = taskProgress(t);
+    return '<div class="task-banner-mini" data-action="open-entry" data-collection="tasks" data-id="'+t.id+'">'
+      + '<span class="task-banner-mini-name">'+esc(t.title)+'</span>'
+      + '<span class="task-banner-mini-days" style="color:'+accent.text+'">'+formatDaysLeft(daysLeft)+'</span>'
+      + '<div class="progress-bar-track mini"><div class="progress-bar-fill" style="width:'+pct+'%;background:'+accent.bar+'"></div></div>'
+      + '</div>';
+  }).join('');
+  const moreCount = active.length - top.length;
+  const moreLine = moreCount>0 ? '<div class="task-banner-more" data-action="go-folder" data-collection="tasks">他 '+moreCount+' 件のタスクを見る ›</div>' : '';
+  return '<div class="task-banner">'
+    + '<div class="task-banner-title">🍒 デイリータスク・進捗管理</div>'
+    + '<div data-action="open-entry" data-collection="tasks" data-id="'+main.id+'" style="cursor:pointer;">'
+    +   '<div class="task-banner-name">'+esc(main.title)+'</div>'
+    +   '<div class="task-banner-row">'
+    +     '<span>工程: '+esc(mainStep)+'</span>'
+    +     '<span class="task-banner-days" style="color:'+mainAccent.text+'">'+formatDaysLeft(mainDaysLeft)+'</span>'
+    +   '</div>'
+    +   '<div class="progress-bar-track"><div class="progress-bar-fill" style="width:'+mainPct+'%;background:'+mainAccent.bar+'"></div></div>'
+    +   '<div class="progress-pct">進捗 '+mainPct+'%</div>'
+    + '</div>'
+    + (restHTML ? '<div class="task-banner-rest">'+restHTML+'</div>' : '')
+    + moreLine
+    + '</div>';
+}
+
 async function renderHome(){
   const tiles = FOLDER_ORDER.map(function(key){
     const c = FOLDER_META[key];
@@ -375,6 +509,7 @@ async function renderHome(){
       + '<div class="desc">'+c.desc+'</div>'
       + '</div>';
   }).join('');
+  const bannerHTML = await renderTaskBanner();
   return ''
     + '<div class="home-hero">'
     +   '<div class="doodle-accent">'+doodleSVG()+'</div>'
@@ -383,6 +518,7 @@ async function renderHome(){
     +   '<p>𓂃⟡.· ୨୧</p>'
     + '</div>'
     + '<div class="cabinet">'+tiles+'</div>'
+    + bannerHTML
     + '<div class="home-footer">'
     +   '<button class="btn" data-action="export-backup">📤 バックアップを書き出す</button>'
     +   '<label class="btn file-btn">📥 バックアップから復元<input type="file" accept="application/json" data-action-file="import-backup" hidden></label>'
@@ -432,6 +568,19 @@ function cardHTML(collection, e){
       + '<div class="pairing-avatars">'+avatars+'</div>'
       + '<div class="pairing-title">'+(esc(e.title)||'(名前未設定)')+'</div>'
       + '<div class="pairing-names">'+namesLine+'</div>'
+      + '</div>';
+  }
+  if(collection==='tasks'){
+    const daysLeft = daysUntil(e.dueDate);
+    const accent = taskAccentColor(daysLeft);
+    const pct = taskProgress(e);
+    const sub = [e.category, formatDaysLeft(daysLeft)].filter(Boolean).join(' ・ ');
+    return '<div class="entry-card" data-action="open-entry" data-collection="tasks" data-id="'+e.id+'">'
+      + '<div class="entry-body" style="width:100%;">'
+      +   '<div class="entry-title">'+(e.completed?'✅ ':'')+esc(e.title)+'</div>'
+      +   '<div class="entry-sub" style="color:'+accent.text+'">'+esc(sub)+'</div>'
+      +   '<div class="task-card-progress"><div class="progress-bar-track"><div class="progress-bar-fill" style="width:'+pct+'%;background:'+accent.bar+'"></div></div></div>'
+      + '</div>'
       + '</div>';
   }
   const meta = FOLDER_META[collection];
@@ -573,6 +722,8 @@ async function renderDetail(collection, id){
     metaLine = '<div class="detail-sub">'+esc(e.genre)+'</div>';
   }
   const tagsHTML = (e.tags||[]).length ? '<div class="entry-tags center">' + e.tags.map(function(t){ return '<span class="chip">#'+esc(t)+'</span>'; }).join('') + '</div>' : '';
+  const panelInner = linkedChars + bodyText;
+  const panelHTML = panelInner ? '<div class="info-panel">'+panelInner+'</div>' : '';
   return ''
     + '<div class="app-header">'
     +   '<button class="icon-btn" data-action="go-back-list" data-collection="'+collection+'">←</button>'
@@ -585,8 +736,7 @@ async function renderDetail(collection, id){
     +   metaLine
     +   media
     +   tagsHTML
-    +   linkedChars
-    +   bodyText
+    +   panelHTML
     +   '<div class="detail-actions">'
     +     '<button class="btn" data-action="edit-entry" data-collection="'+collection+'" data-id="'+e.id+'">編集する</button>'
     +     '<button class="btn btn-danger" data-action="delete-entry" data-collection="'+collection+'" data-id="'+e.id+'">削除する</button>'
@@ -635,12 +785,14 @@ async function renderCharacterDetail(id){
     +   '</div>'
     +   '<div class="name-plate" style="border-color:'+colorHex+'">'+(esc(e.name)||'(名前未設定)')+'</div>'
     +   tagsHTML
-    +   '<div class="info-list">'+infoHTML+'</div>'
-    +   introHTML
-    +   costumeHTML
-    +   noteHTML
-    +   pairingHTML
-    +   commentsHTML
+    +   '<div class="info-panel">'
+    +     '<div class="info-list">'+infoHTML+'</div>'
+    +     introHTML
+    +     costumeHTML
+    +     noteHTML
+    +     pairingHTML
+    +     commentsHTML
+    +   '</div>'
     +   '<div class="detail-actions">'
     +     '<button class="btn" data-action="edit-entry" data-collection="characters" data-id="'+e.id+'">編集する</button>'
     +     '<button class="btn btn-danger" data-action="delete-entry" data-collection="characters" data-id="'+e.id+'">削除する</button>'
@@ -718,8 +870,10 @@ async function renderPairingDetail(id){
     +   '<div class="pairing-chip-row">'+namesHTML+'</div>'
     +   taglineHTML
     +   tagsHTML
-    +   itemsHTML
-    +   descHTML
+    +   '<div class="info-panel">'
+    +     itemsHTML
+    +     descHTML
+    +   '</div>'
     +   '<div class="detail-actions">'
     +     '<button class="btn" data-action="edit-entry" data-collection="pairings" data-id="'+e.id+'">編集する</button>'
     +     '<button class="btn btn-danger" data-action="delete-entry" data-collection="pairings" data-id="'+e.id+'">削除する</button>'
@@ -870,8 +1024,104 @@ async function renderCharacterForm(editId){
     + floatingBackButton('cancel-form', 'characters', editId, true);
 }
 
+function renderStepsEditor(steps){
+  steps = steps || [];
+  const rows = steps.map(function(s, i){
+    return '<div class="step-edit-row">'
+      + '<input type="text" class="step-label-input" data-index="'+i+'" value="'+esc(s.label||'')+'">'
+      + '<button type="button" class="thumb-x" data-action="remove-step" data-index="'+i+'">×</button>'
+      + '</div>';
+  }).join('');
+  return '<div class="steps-editor" data-field="steps">'
+    + rows
+    + '<div class="step-add-row">'
+    +   '<input type="text" id="new-step-input" placeholder="工程名を入力(例: ラフ)">'
+    +   '<button type="button" class="btn" data-action="add-step">＋追加</button>'
+    + '</div>'
+    + '<div class="step-template-row">'
+    +   '<button type="button" class="btn" data-action="use-template-steps" data-template="manga">📖 漫画用テンプレート</button>'
+    +   '<button type="button" class="btn" data-action="use-template-steps" data-template="illustration">🎨 イラスト用テンプレート</button>'
+    + '</div>'
+    + '</div>';
+}
+
+async function renderTaskForm(editId){
+  const draftKey = 'tasks:'+(editId||'new');
+  if(!state.draft || state.draftFor !== draftKey){
+    const existing = editId ? await loadDetail('tasks', editId) : null;
+    state.draft = existing ? JSON.parse(JSON.stringify(existing)) : {steps:[], completedSteps:[]};
+    if(!state.draft.steps) state.draft.steps = [];
+    if(!state.draft.completedSteps) state.draft.completedSteps = [];
+    state.draftFor = draftKey;
+  }
+  return ''
+    + '<div class="app-header">'
+    +   '<button class="icon-btn" data-action="cancel-form" data-collection="tasks" data-id="'+(editId||'')+'">←</button>'
+    +   '<div class="header-title">'+(editId?'編集':'新規追加')+':制作タスク</div>'
+    + '</div>'
+    + '<form class="task-form" data-collection="tasks" data-id="'+(editId||'')+'">'
+    +   '<div class="field"><label>タスク名 <span class="req">*</span></label><input type="text" name="field_title" value="'+esc(state.draft.title||'')+'"></div>'
+    +   '<div class="field"><label>カテゴリ</label><input type="text" name="field_category" value="'+esc(state.draft.category||'')+'" placeholder="漫画・イラスト・小説 など"></div>'
+    +   '<div class="field-row">'
+    +     '<div class="field"><label>開始日</label><input type="date" name="field_startDate" value="'+esc(state.draft.startDate||'')+'"></div>'
+    +     '<div class="field"><label>締切日</label><input type="date" name="field_dueDate" value="'+esc(state.draft.dueDate||'')+'"></div>'
+    +   '</div>'
+    +   '<div class="field"><label>メモ</label><textarea name="field_memo">'+esc(state.draft.memo||'')+'</textarea></div>'
+    +   '<div class="field"><label>工程リスト</label>'+renderStepsEditor(state.draft.steps)+'</div>'
+    +   '<div class="form-actions">'
+    +     '<button type="submit" class="btn btn-primary">保存する</button>'
+    +     '<button type="button" class="btn" data-action="cancel-form" data-collection="tasks" data-id="'+(editId||'')+'">キャンセル</button>'
+    +   '</div>'
+    + '</form>'
+    + floatingBackButton('cancel-form', 'tasks', editId, true);
+}
+
+async function renderTaskDetail(id){
+  const e = await loadDetail('tasks', id);
+  if(!e){
+    return '<div class="app-header"><button class="icon-btn" data-action="go-back-list" data-collection="tasks">←</button><div class="header-title">⋆✦𝚃𝚊𝚜𝚔 𝚃𝚛𝚊𝚌𝚔𝚎𝚛🍒</div></div><div class="empty-state">データが見つかりませんでした。</div>';
+  }
+  const daysLeft = daysUntil(e.dueDate);
+  const accent = taskAccentColor(daysLeft);
+  const pct = taskProgress(e);
+  const steps = e.steps || [];
+  const done = e.completedSteps || [];
+  const stepsHTML = steps.length ? ('<div class="step-checklist">' + steps.map(function(s){
+    const isDone = done.indexOf(s.id)!==-1;
+    return '<label class="step-row '+(isDone?'done':'')+'"><input type="checkbox" data-action="toggle-task-step" data-id="'+e.id+'" data-step="'+s.id+'" '+(isDone?'checked':'')+'><span>'+esc(s.label)+'</span></label>';
+  }).join('') + '</div>') : '<p class="muted" style="font-size:12.5px;">工程が登録されていません。編集から追加できます。</p>';
+  const memoHTML = e.memo ? '<div class="field-block"><div class="field-label">メモ</div><p class="body-text">'+esc(e.memo).replace(/\n/g,'<br>')+'</p></div>' : '';
+  const categoryChip = e.category ? '<div class="entry-tags center"><span class="chip">'+esc(e.category)+'</span></div>' : '';
+  return ''
+    + '<div class="app-header">'
+    +   '<button class="icon-btn" data-action="go-back-list" data-collection="tasks">←</button>'
+    +   '<div class="header-title">⋆✦𝚃𝚊𝚜𝚔 𝚃𝚛𝚊𝚌𝚔𝚎𝚛🍒</div>'
+    +   '<button class="header-edit-btn" data-action="edit-entry" data-collection="tasks" data-id="'+e.id+'">✎ 編集</button>'
+    + '</div>'
+    + '<div class="detail-page">'
+    +   '<div class="name-plate">'+(e.completed?'✅ ':'')+esc(e.title)+'</div>'
+    +   categoryChip
+    +   '<div class="task-meta-row">'
+    +     '<div><strong>'+esc(e.startDate||'-')+'</strong>開始日</div>'
+    +     '<div><strong style="color:'+accent.text+'">'+formatDaysLeft(daysLeft)+'</strong>締切('+esc(e.dueDate||'未設定')+')</div>'
+    +   '</div>'
+    +   '<div class="progress-bar-track"><div class="progress-bar-fill" style="width:'+pct+'%;background:'+accent.bar+'"></div></div>'
+    +   '<div class="progress-pct">進捗 '+pct+'%</div>'
+    +   '<div class="info-panel">'
+    +     '<div class="field-label">工程チェックリスト</div>'
+    +     stepsHTML
+    +     memoHTML
+    +   '</div>'
+    +   '<div class="detail-actions">'
+    +     '<button class="btn" data-action="edit-entry" data-collection="tasks" data-id="'+e.id+'">編集する</button>'
+    +     '<button class="btn btn-danger" data-action="delete-entry" data-collection="tasks" data-id="'+e.id+'">削除する</button>'
+    +   '</div>'
+    + '</div>'
+    + floatingBackButton('go-back-list', 'tasks');
+}
+
 function captureFormDraft(){
-  const formEl = document.querySelector('.entry-form') || document.querySelector('.character-form');
+  const formEl = document.querySelector('.entry-form') || document.querySelector('.character-form') || document.querySelector('.task-form');
   if(!formEl || !state.draft) return;
   formEl.querySelectorAll('input[type=text][name^="field_"], input[type=date][name^="field_"], textarea[name^="field_"], select[name^="field_"]').forEach(function(el){
     const key = el.name.replace('field_','');
@@ -889,6 +1139,10 @@ function captureFormDraft(){
     const field = el.dataset.field;
     const i = Number(el.dataset.index);
     if(state.draft[field] && state.draft[field][i]) state.draft[field][i].label = el.value;
+  });
+  formEl.querySelectorAll('.step-label-input').forEach(function(el){
+    const i = Number(el.dataset.index);
+    if(state.draft.steps && state.draft.steps[i]) state.draft.steps[i].label = el.value;
   });
 }
 
@@ -944,7 +1198,7 @@ async function exportBackup(){
     URL.revokeObjectURL(url);
   }catch(err){
     console.error(err);
-    alert('バックアップの書き出しに失敗しました。');
+    showToast('バックアップの書き出しに失敗しました。');
   }
 }
 async function importBackupFile(file){
@@ -952,17 +1206,18 @@ async function importBackupFile(file){
     const text = await file.text();
     const parsed = JSON.parse(text);
     const data = parsed.data || parsed;
-    if(!confirm('バックアップを読み込みます。現在のデータに上書きされる場合があります。続けますか?')) return;
+    const ok = await showConfirm('バックアップを読み込みます。現在のデータに上書きされる場合があります。続けますか?');
+    if(!ok) return;
     const keys = Object.keys(data);
     for(let i=0;i<keys.length;i++){
       await kvSet(keys[i], data[keys[i]]);
     }
-    alert('復元が完了しました。');
+    showToast('復元が完了しました。');
     state.view = 'home';
     renderApp();
   }catch(err){
     console.error(err);
-    alert('読み込みに失敗しました。ファイルの形式をご確認ください。');
+    showToast('読み込みに失敗しました。ファイルの形式をご確認ください。');
   }
 }
 
@@ -979,9 +1234,45 @@ function closeLightbox(){
   document.querySelectorAll('.lightbox-overlay').forEach(function(el){ el.remove(); });
 }
 
+function showConfirm(message){
+  return new Promise(function(resolve){
+    const overlay = document.createElement('div');
+    overlay.className = 'confirm-overlay';
+    overlay.innerHTML = ''
+      + '<div class="confirm-box">'
+      +   '<p>'+esc(message)+'</p>'
+      +   '<div class="row">'
+      +     '<button type="button" class="btn btn-danger" data-confirm="yes">削除する</button>'
+      +     '<button type="button" class="btn" data-confirm="no">やめる</button>'
+      +   '</div>'
+      + '</div>';
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', function(ev){
+      const btn = ev.target.closest('[data-confirm]');
+      if(btn){
+        overlay.remove();
+        resolve(btn.dataset.confirm==='yes');
+      } else if(ev.target===overlay){
+        overlay.remove();
+        resolve(false);
+      }
+    });
+  });
+}
+
+function showToast(message){
+  document.querySelectorAll('.app-toast').forEach(function(el){ el.remove(); });
+  const el = document.createElement('div');
+  el.className = 'app-toast';
+  el.textContent = message;
+  document.body.appendChild(el);
+  setTimeout(function(){ el.remove(); }, 2400);
+}
+
 /* ===================== 削除 ===================== */
 async function handleDelete(collection, id){
-  if(!confirm('本当に削除しますか?この操作は取り消せません。')) return;
+  const ok = await showConfirm('本当に削除しますか?この操作は取り消せません。');
+  if(!ok) return;
   if(collection==='characters' || COLLECTIONS[collection]){
     await deleteDetail(collection, id);
     let idx = await loadIndex(collection);
@@ -999,10 +1290,13 @@ async function renderApp(){
   let html = '';
   if(state.view==='home') html = await renderHome();
   else if(state.view==='list') html = await renderList(state.collection);
-  else if(state.view==='form') html = await renderForm(state.collection, state.editId);
+  else if(state.view==='form'){
+    html = (state.collection==='tasks') ? await renderTaskForm(state.editId) : await renderForm(state.collection, state.editId);
+  }
   else if(state.view==='detail'){
     if(state.collection==='characters') html = await renderCharacterDetail(state.id);
     else if(state.collection==='pairings') html = await renderPairingDetail(state.id);
+    else if(state.collection==='tasks') html = await renderTaskDetail(state.id);
     else html = await renderDetail(state.collection, state.id);
   }
   else if(state.view==='todos') html = await renderTodos();
@@ -1064,6 +1358,42 @@ async function onAppClick(e){
   } else if(action==='remove-labeled-image'){
     captureFormDraft();
     state.draft[t.dataset.field].splice(Number(t.dataset.index),1);
+    renderApp();
+  } else if(action==='add-step'){
+    captureFormDraft();
+    const input = document.getElementById('new-step-input');
+    const label = input ? input.value.trim() : '';
+    if(!label) return;
+    if(!state.draft.steps) state.draft.steps = [];
+    state.draft.steps.push({id:uid(), label:label});
+    renderApp();
+  } else if(action==='remove-step'){
+    captureFormDraft();
+    const removed = state.draft.steps.splice(Number(t.dataset.index),1);
+    if(removed && removed[0] && state.draft.completedSteps){
+      state.draft.completedSteps = state.draft.completedSteps.filter(function(sid){ return sid!==removed[0].id; });
+    }
+    renderApp();
+  } else if(action==='use-template-steps'){
+    captureFormDraft();
+    const tmpl = TASK_STEP_TEMPLATES[t.dataset.template] || [];
+    state.draft.steps = tmpl.map(function(label){ return {id:uid(), label:label}; });
+    renderApp();
+  } else if(action==='toggle-task-step'){
+    const taskId = t.dataset.id;
+    const stepId = t.dataset.step;
+    const detail = await loadDetail('tasks', taskId);
+    if(!detail) return;
+    if(!detail.completedSteps) detail.completedSteps = [];
+    const i = detail.completedSteps.indexOf(stepId);
+    if(i===-1) detail.completedSteps.push(stepId);
+    else detail.completedSteps.splice(i,1);
+    detail.completed = (detail.steps && detail.steps.length>0) && detail.completedSteps.length === detail.steps.length;
+    await saveDetail('tasks', taskId, detail);
+    let idx = await loadIndex('tasks');
+    idx = idx.filter(function(x){ return x.id!==taskId; });
+    idx.push(buildIndexEntry('tasks', detail));
+    await saveIndex('tasks', idx);
     renderApp();
   } else if(action==='open-image'){
     openLightbox(t.dataset.src);
@@ -1140,22 +1470,28 @@ async function onAppSubmit(e){
     renderApp();
     return;
   }
-  if(!form.matches('.entry-form, .character-form')) return;
+  if(!form.matches('.entry-form, .character-form, .task-form')) return;
   e.preventDefault();
   const collection = form.dataset.collection;
   const editId = form.dataset.id || null;
   captureFormDraft();
   const nameVal = collection==='characters' ? state.draft.name : state.draft.title;
   if(!nameVal || !nameVal.trim()){
-    alert(collection==='characters' ? '名前を入力してください。' : 'タイトルを入力してください。');
+    showToast(collection==='characters' ? '名前を入力してください。' : 'タイトルを入力してください。');
     return;
   }
   const id = editId || uid();
   const tagsArr = (state.draft._tagsRaw||'').split(/[#,、\s]+/).map(function(s){ return s.trim(); }).filter(function(s){ return s; });
   const detail = Object.assign({}, state.draft, {id:id, tags:tagsArr});
   delete detail._tagsRaw;
+  if(collection==='tasks'){
+    if(!detail.completedSteps) detail.completedSteps = [];
+    const validStepIds = (detail.steps||[]).map(function(s){ return s.id; });
+    detail.completedSteps = detail.completedSteps.filter(function(sid){ return validStepIds.indexOf(sid)!==-1; });
+    detail.completed = (detail.steps && detail.steps.length>0) && detail.completedSteps.length === detail.steps.length;
+  }
   const ok = await saveDetail(collection, id, detail);
-  if(!ok){ alert('保存に失敗しました。もう一度お試しください。'); return; }
+  if(!ok){ showToast('保存に失敗しました。もう一度お試しください。'); return; }
   let idx = await loadIndex(collection);
   idx = idx.filter(function(x){ return x.id!==id; });
   idx.push(buildIndexEntry(collection, detail));
