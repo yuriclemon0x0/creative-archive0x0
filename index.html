@@ -175,10 +175,15 @@ textarea{min-height:80px;resize:vertical;}
 
 .todo-list{padding:12px 20px;display:flex;flex-direction:column;gap:8px;min-height:120px;}
 .todo-row{display:flex;align-items:center;justify-content:space-between;background:#fffaf0;border:1px solid rgba(176,144,79,.3);border-radius:8px;padding:11px 12px;}
+.todo-row-actions{display:flex;align-items:center;gap:6px;}
+.todo-edit-btn{background:none;border:none;color:var(--color-text-soft);font-size:13px;cursor:pointer;padding:2px 4px;}
+.todo-edit-form{gap:8px;}
+.todo-edit-form input{flex:1;padding:6px 9px;border:1px solid rgba(176,144,79,.5);border-radius:6px;background:#fff;font-family:'Noto Serif JP',serif;font-size:13px;}
 .todo-row.done .todo-check span{text-decoration:line-through;color:var(--color-text-soft);}
 .todo-check{display:flex;align-items:center;gap:9px;font-size:13.5px;cursor:pointer;}
 .todo-check input{width:16px;height:16px;}
-.todo-form{display:flex;gap:8px;padding:12px 20px 40px;position:sticky;bottom:0;background:var(--color-bg);}
+.todo-form{display:flex;gap:8px;padding:12px 16px calc(14px + env(safe-area-inset-bottom,0px));position:fixed;left:0;right:0;bottom:0;max-width:480px;margin:0 auto;background:var(--color-bg);border-top:1px solid rgba(176,144,79,.25);z-index:40;}
+.todo-list{padding-bottom:90px;}
 .todo-form input{flex:1;padding:9px 12px;border:1px solid rgba(176,144,79,.5);border-radius:20px;background:#fffdf7;}
 
 .lightbox-overlay{position:fixed;inset:0;background:rgba(20,15,10,.88);display:flex;align-items:center;justify-content:center;z-index:1000;padding:24px;}
@@ -249,7 +254,7 @@ const COLOR_PALETTE = [
 const state = {
   view:'home', collection:null, id:null, editId:null,
   search:'', tagFilter:null, categoryFilter:null, originFilter:null, genreFilter:null,
-  listCache:[], todosCache:[], charMapCache:null,
+  listCache:[], todosCache:[], charMapCache:null, editingTodoId:null,
   draft:null, draftFor:null
 };
 
@@ -892,20 +897,31 @@ async function renderTodos(){
   const items = await loadJSON('idx:todos', []);
   state.todosCache = items;
   const list = items.length ? items.map(function(it){
+    if(state.editingTodoId === it.id){
+      return '<form class="todo-row todo-edit-form" data-id="'+it.id+'">'
+        + '<input type="text" class="todo-edit-input" value="'+esc(it.text)+'">'
+        + '<button type="submit" class="btn btn-primary" style="padding:7px 10px;font-size:12px;">保存</button>'
+        + '<button type="button" class="btn" style="padding:7px 10px;font-size:12px;" data-action="cancel-edit-todo">やめる</button>'
+        + '</form>';
+    }
     return '<div class="todo-row '+(it.done?'done':'')+'">'
       + '<label class="todo-check"><input type="checkbox" data-action="toggle-todo" data-id="'+it.id+'" '+(it.done?'checked':'')+'><span>'+esc(it.text)+'</span></label>'
-      + '<button class="thumb-x" data-action="delete-todo" data-id="'+it.id+'">×</button>'
+      + '<div class="todo-row-actions">'
+      +   '<button class="todo-edit-btn" data-action="edit-todo" data-id="'+it.id+'">✎</button>'
+      +   '<button class="thumb-x" data-action="delete-todo" data-id="'+it.id+'">×</button>'
+      + '</div>'
       + '</div>';
-  }).join('') : '<div class="empty-state"><span class="icon">🔖</span>まだ何も登録されていません。下のフォームから描きたいものを追加しましょう。</div>';
+  }).join('') : '<div class="empty-state"><span class="icon">📝</span>まだ何も登録されていません。下のフォームから描きたいものを追加しましょう。</div>';
   return ''
     + '<div class="app-header">'
     +   '<button class="icon-btn" data-action="go-home">←</button>'
-    +   '<div class="header-title">🔖 やりたいことリスト</div>'
+    +   '<div class="header-title">⋆✦𝚆𝚒𝚜𝚑 𝙻𝚒𝚜𝚝📝</div>'
     + '</div>'
     + '<div class="todo-list">'+list+'</div>'
     + '<form class="todo-form" id="todo-add-form">'
     +   '<input type="text" id="todo-input" placeholder="描きたいもの・やりたいことを入力">'
     +   '<button type="submit" class="btn btn-primary">追加</button>'
+    + '</form>'
     + floatingBackButton('go-home', null, null, true);
 }
 
@@ -1003,7 +1019,7 @@ async function onAppClick(e){
     state.view = 'home'; renderApp();
   } else if(action==='go-folder'){
     const key = t.dataset.collection;
-    if(key==='todos'){ state.view = 'todos'; }
+    if(key==='todos'){ state.view = 'todos'; state.editingTodoId = null; }
     else { state.view = 'list'; state.collection = key; state.search=''; state.tagFilter=null; state.categoryFilter=null; state.originFilter=null; state.genreFilter=null; }
     renderApp();
   } else if(action==='go-back-list'){
@@ -1070,6 +1086,12 @@ async function onAppClick(e){
       await saveDetail('characters', charId, detail);
       renderApp();
     }
+  } else if(action==='edit-todo'){
+    state.editingTodoId = t.dataset.id;
+    renderApp();
+  } else if(action==='cancel-edit-todo'){
+    state.editingTodoId = null;
+    renderApp();
   }
 }
 
@@ -1084,6 +1106,21 @@ async function onAppSubmit(e){
     items.push({id:uid(), text:text, done:false});
     await saveJSON('idx:todos', items);
     state.todosCache = items;
+    renderApp();
+    return;
+  }
+  if(form.matches('.todo-edit-form')){
+    e.preventDefault();
+    const id = form.dataset.id;
+    const input = form.querySelector('.todo-edit-input');
+    const text = input ? input.value.trim() : '';
+    if(!text) return;
+    const items = state.todosCache || await loadJSON('idx:todos',[]);
+    const found = items.filter(function(x){ return x.id===id; });
+    if(found.length) found[0].text = text;
+    await saveJSON('idx:todos', items);
+    state.todosCache = items;
+    state.editingTodoId = null;
     renderApp();
     return;
   }
